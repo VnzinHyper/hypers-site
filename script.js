@@ -2,7 +2,7 @@
 // HYPERS CLIENT — configuração principal
 // Troque o link abaixo quando sair uma versão nova.
 // =====================================================
-const DOWNLOAD_URL = "https://github.com/vnzinhypers-prog/vnzinhypers-prog.github.io/releases/download/v3.10.0/HypersClient-Setup.exe";
+const DOWNLOAD_URL = "https://github.com/vnzinhypers-prog/vnzinhypers-prog.github.io/releases/download/v3.11.0/HypersClient-Setup.exe";
 const DISCORD_INVITE = "https://discord.gg/SZxEGgQyJ2";
 const GUILD_ID = "1538389920215728161";
 const RELEASES_API = "https://api.github.com/repos/vnzinhypers-prog/vnzinhypers-prog.github.io/releases";
@@ -34,17 +34,50 @@ document.addEventListener("DOMContentLoaded", () => {
   // ---- Todos os botões de download apontam para DOWNLOAD_URL ----
   document.querySelectorAll("[data-download]").forEach(a => { a.href = DOWNLOAD_URL; });
 
-  // ---- Online agora (Discord widget) ----
+  // ---- Online agora: jogadores com o client aberto (tempo real) ----
   const onlineEl = document.getElementById("online-count");
   const onlineWrap = document.getElementById("online-wrap");
+  function setOnline(n) {
+    if (onlineEl) onlineEl.textContent = n;
+  }
+  function hideOnline() {
+    if (onlineWrap) onlineWrap.style.display = "none";
+  }
+  async function refreshOnline() {
+    if (!onlineEl) return;
+    // 1) Tenta a API do client (quem está jogando agora).
+    try {
+      const r = await fetch("https://hypersclient-api.vercel.app/api/online", { cache: "no-store" });
+      if (r.ok) {
+        const d = await r.json();
+        const list = Array.isArray(d) ? d : (d.players || d.online || []);
+        if (Array.isArray(list)) {
+          const now = Date.now();
+          const fresh = list.filter(p => {
+            const seen = p.lastSeen || p.last_seen || p.joined || 0;
+            return now - seen < 90000;
+          }).length;
+          setOnline(fresh);
+          return;
+        }
+      }
+      throw 0;
+    } catch (e) {
+      // 2) Cai para o Discord.
+      try {
+        const r2 = await fetch("https://discord.com/api/guilds/" + GUILD_ID + "/widget.json");
+        const d2 = await r2.json();
+        if (typeof d2.presence_count === "number") {
+          setOnline(d2.presence_count);
+          return;
+        }
+      } catch (e2) {}
+      hideOnline();
+    }
+  }
   if (onlineEl) {
-    fetch("https://discord.com/api/guilds/" + GUILD_ID + "/widget.json")
-      .then(r => { if (!r.ok) throw 0; return r.json(); })
-      .then(d => {
-        if (typeof d.presence_count === "number") onlineEl.textContent = d.presence_count;
-        else throw 0;
-      })
-      .catch(() => { if (onlineWrap) onlineWrap.style.display = "none"; });
+    refreshOnline();
+    setInterval(refreshOnline, 30000);
   }
 
   // ---- Downloads (soma download_count dos assets) ----
