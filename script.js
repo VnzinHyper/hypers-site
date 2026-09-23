@@ -2,7 +2,7 @@
 // HYPERS CLIENT — configuração principal
 // Troque o link abaixo quando sair uma versão nova.
 // =====================================================
-const DOWNLOAD_URL = "https://github.com/vnzinhypers-prog/vnzinhypers-prog.github.io/releases/download/v3.11.0/HypersClient-Setup.exe";
+const DOWNLOAD_URL = "https://github.com/vnzinhypers-prog/vnzinhypers-prog.github.io/releases/download/v3.11.1/HypersClient-Setup.exe";
 const DISCORD_INVITE = "https://discord.gg/SZxEGgQyJ2";
 const GUILD_ID = "1538389920215728161";
 const RELEASES_API = "https://api.github.com/repos/vnzinhypers-prog/vnzinhypers-prog.github.io/releases";
@@ -195,7 +195,7 @@ function renderVersions(rels) {
     row.className = "ver-row";
     const name = r.name || r.tag_name || "Versão";
     const date = fmtDate(r.published_at || r.created_at);
-    const asset = (r.assets || [])[0];
+    const asset = (r.assets || []).filter(a => !/panel/i.test(a.name || ""))[0];
     const size = asset ? fmtSize(asset.size) : "";
     const link = (asset && asset.browser_download_url) || r.html_url || DOWNLOAD_URL;
     const s = document.createElement("strong"); s.textContent = name;
